@@ -36,4 +36,9 @@
 
 ## 开发环境配置
 
-1. 安装依赖： 
+1. 安装依赖：
+   bash
+   pip install -r requirements.txt
+2.运行程序：
+   bash
+   python main.py
