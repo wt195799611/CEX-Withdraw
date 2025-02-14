@@ -1,5 +1,7 @@
 import sys
 import os
+import os
+os.add_dll_directory("C:\\Windows\\System32")
 
 def resource_path(relative_path):
     """获取资源的绝对路径"""
@@ -28,4 +30,17 @@ def main():
     app.mainloop()
 
 if __name__ == "__main__":
-    main() 
+    # 设置环境变量
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    os.environ['LANG'] = 'zh_CN.UTF-8'
+    
+    # 安全地设置编码
+    try:
+        if sys.stdout and sys.stdout.encoding != 'utf-8':
+            sys.stdout.reconfigure(encoding='utf-8')
+        if sys.stderr and sys.stderr.encoding != 'utf-8':
+            sys.stderr.reconfigure(encoding='utf-8')
+    except:
+        pass
+    
+    main()

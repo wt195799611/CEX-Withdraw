@@ -10,42 +10,56 @@ import sys
 class CryptoApp(tk.Tk):
     def __init__(self):
         super().__init__()
+        
+        # 在创建窗口之前先设置任务栏图标ID
+        try:
+            import ctypes
+            myappid = u'company.cexwithdraw.1.0'
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        except Exception as e:
+            print(f"设置任务栏ID失败: {e}")
+            
         self.title("CEX提币器")
         self.geometry("650x900")
         
-        # 设置应用程序图标
+        # 设置图标
         try:
-            # 获取图标文件的路径
+            # 获取图标路径
             if getattr(sys, 'frozen', False):
-                # 如果是打包后的exe
-                icon_path = os.path.join(sys._MEIPASS, 'app.ico')
+                # 打包后的exe
+                base_path = sys._MEIPASS
             else:
-                # 如果是开发环境
-                icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app.ico')
+                # 开发环境
+                base_path = os.path.dirname(os.path.dirname(__file__))
             
-            # 设置窗口图标
-            self.iconbitmap(icon_path)
+            icon_path = os.path.join(base_path, 'app.ico')
             
-            # 设置任务栏图标
-            import ctypes
-            myappid = 'mycompany.cexwithdraw.v1.0'  # 可以自定义
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+            # 同时设置窗口图标和任务栏图标
+            self.iconbitmap(default=icon_path)
+            self.tk.call('wm', 'iconphoto', self._w, tk.PhotoImage(file=icon_path))
             
         except Exception as e:
             print(f"设置图标失败: {e}")
         
-        # 设置主题颜色
-        self.bg_color = "#FFFFFF"       # 白色背景
-        self.input_bg = "#FFFFFF"       # 输入框背景色
-        self.primary_color = "#1e90ff"  # 主题色
-        self.hover_color = "#3aa0ff"    # 悬停色
-        self.text_color = "#333333"     # 文字颜色
+        # 修改主题颜色
+        self.win11_colors = {
+            'bg': '#FFFFFF',
+            'fg': '#202020',
+            'accent': '#0078D4',      # Windows 11蓝色
+            'hover': '#429CE3',       # 稍浅的蓝色
+            'pressed': '#005A9E',     # 深蓝色
+            'border': '#E5E5E5',
+            'input_bg': '#FFFFFF',
+            'disabled': '#F0F0F0',
+            'button_bg': '#0078D4',   # 按钮背景色
+            'button_fg': '#FFFFFF'    # 按钮文字颜色
+        }
         
         # 设置默认字体
         self.default_font = "Microsoft YaHei UI"  # 微软雅黑
         
         # 设置窗口背景色
-        self.configure(bg=self.bg_color)
+        self.configure(bg=self.win11_colors['bg'])
         self.style = ttk.Style()
         self.setup_theme()
         
@@ -73,12 +87,14 @@ class CryptoApp(tk.Tk):
         self.win11_colors = {
             'bg': '#FFFFFF',
             'fg': '#202020',
-            'accent': '#0067C0',  # Windows 11默认强调色
-            'hover': '#0078D4',
-            'pressed': '#005BA1',
+            'accent': '#0078D4',      # Windows 11蓝色
+            'hover': '#429CE3',       # 稍浅的蓝色
+            'pressed': '#005A9E',     # 深蓝色
             'border': '#E5E5E5',
             'input_bg': '#FFFFFF',
-            'disabled': '#F0F0F0'
+            'disabled': '#F0F0F0',
+            'button_bg': '#0078D4',   # 按钮背景色
+            'button_fg': '#FFFFFF'    # 按钮文字颜色
         }
 
         # 基础框架样式
@@ -112,24 +128,49 @@ class CryptoApp(tk.Tk):
             font=('Segoe UI', 10)
         )
         
-        # 按钮样式 - Windows 11风格
+        # 修改按钮样式，使其成为实心填充
         self.style.configure(
             "Modern.TButton",
-            background=self.win11_colors['accent'],
-            foreground='white',
+            background=self.win11_colors['button_bg'],
+            foreground=self.win11_colors['button_fg'],
             padding=(15, 8),
-            font=('Segoe UI', 10),
+            font=('Segoe UI', 10, 'bold'),
             relief="flat",
-            borderwidth=0
+            borderwidth=0,
+            highlightthickness=0  # 移除高亮边框
         )
-        self.style.map(
-            "Modern.TButton",
-            background=[
-                ('pressed', self.win11_colors['pressed']),
-                ('active', self.win11_colors['hover'])
-            ],
-            relief=[('pressed', 'flat')]
+        
+        # 修改Action按钮样式
+        self.style.configure(
+            "Action.TButton",
+            background='#00A65A',     # 绿色
+            foreground='#FFFFFF',
+            padding=(15, 8),
+            font=('Segoe UI', 10, 'bold'),
+            relief="flat",
+            borderwidth=0,
+            highlightthickness=0      # 移除高亮边框
         )
+        
+        # 修改Stop按钮样式
+        self.style.configure(
+            "Stop.TButton",
+            background='#DC3545',     # 红色
+            foreground='#FFFFFF',
+            padding=(15, 8),
+            font=('Segoe UI', 10, 'bold'),
+            relief="flat",
+            borderwidth=0,
+            highlightthickness=0      # 移除高亮边框
+        )
+        
+        # 为所有按钮添加悬停和按压效果
+        for style_name in ["Modern.TButton", "Action.TButton", "Stop.TButton"]:
+            self.style.layout(style_name, [
+                ('Button.padding', {'children': [
+                    ('Button.label', {'sticky': 'nswe'})
+                ], 'sticky': 'nswe'})
+            ])
         
         # 输入框样式 - Windows 11风格
         self.style.configure(
@@ -331,21 +372,36 @@ class CryptoApp(tk.Tk):
         button_frame = ttk.Frame(self.withdraw_frame)
         button_frame.pack(pady=10)
         
-        # 提币按钮
+        # 提币按钮使用绿色样式
         self.withdraw_button = ttk.Button(
             button_frame,
             text="开始提币",
             command=self.start_withdraw,
-            style="Modern.TButton"
+            style="Action.TButton"  # 使用绿色按钮样式
         )
         self.withdraw_button.pack(side=tk.LEFT, padx=5)
         
-        # 停止按钮
+        # 停止按钮使用红色样式
+        self.style.configure(
+            "Stop.TButton",
+            background='#DC3545',     # 红色
+            foreground='#FFFFFF',
+            padding=(15, 8),
+            font=('Segoe UI', 10, 'bold')
+        )
+        self.style.map(
+            "Stop.TButton",
+            background=[
+                ('pressed', '#C82333'),
+                ('active', '#E04757')
+            ]
+        )
+        
         self.stop_button = ttk.Button(
             button_frame,
             text="停止提币",
             command=self.stop_withdraw,
-            style="Modern.TButton"
+            style="Stop.TButton"  # 使用红色按钮样式
         )
         self.stop_button.pack(side=tk.LEFT, padx=5)
         self.stop_button.configure(state='disabled')  # 初始状态为禁用
@@ -610,10 +666,13 @@ class CryptoApp(tk.Tk):
                     # 更新结果显示
                     self.update_withdraw_result(address, result)
                     
-                    # 如果提币失败，停止循环
-                    if isinstance(result, dict) and not result.get('success', False):
-                        self.is_withdrawing = False
-                        break
+                    # 修改判断逻辑：只有在明确失败时才停止
+                    if isinstance(result, dict):
+                        if result.get('success') is False:  # 明确的失败状态
+                            self.update_withdraw_result(address, f"错误: {result.get('message', '未知错误')}")
+                            self.is_withdrawing = False
+                            break
+                        # 如果是成功或其他状态，继续处理下一个地址
                         
                 except Exception as e:
                     self.update_withdraw_result(address, f"错误: {str(e)}")

@@ -53,36 +53,67 @@ class OKEClient(ExchangeClient):
         super().__init__(api_settings)
         self.base_url = 'https://www.okx.com'
         
+    def _send_request(self, method, url, headers=None, data=None):
+        """统一的请求发送方法"""
+        try:
+            if headers is None:
+                headers = {}
+            
+            # 确保数据使用UTF-8编码
+            if isinstance(data, dict):
+                data = json.dumps(data, ensure_ascii=False).encode('utf-8')
+            elif isinstance(data, str):
+                data = data.encode('utf-8')
+                
+            headers.update({
+                'Content-Type': 'application/json; charset=utf-8',
+                'Accept': 'application/json',
+                'Accept-Charset': 'utf-8'
+            })
+            
+            proxies = self.get_proxies()
+            response = requests.request(
+                method,
+                url,
+                headers=headers,
+                data=data,
+                proxies=proxies
+            )
+            
+            # 强制设置响应编码
+            response.encoding = 'utf-8'
+            return response
+        except Exception as e:
+            raise Exception(f"请求失败: {str(e)}")
+
     def get_balances(self):
         """查询账户余额"""
-        timestamp = datetime.utcnow().isoformat(timespec='seconds') + 'Z'
-        method = 'GET'
-        request_path = '/api/v5/account/balance'
-        body = ''
-
-        # 生成签名
-        message = timestamp + method + request_path + body
-        mac = hmac.new(
-            bytes(self.api_secret, encoding='utf8'),
-            bytes(message, encoding='utf-8'),
-            digestmod='sha256'
-        )
-        sign = base64.b64encode(mac.digest()).decode()
-
-        # 设置请求头
-        headers = {
-            'OK-ACCESS-KEY': self.api_key,
-            'OK-ACCESS-SIGN': sign,
-            'OK-ACCESS-TIMESTAMP': timestamp,
-            'OK-ACCESS-PASSPHRASE': self.passphrase,
-            'Content-Type': 'application/json'
-        }
-
-        # 发送请求
-        proxies = self.get_proxies()
-        url = self.base_url + request_path
-        response = requests.get(url, headers=headers, proxies=proxies)
-        return response.json()
+        try:
+            timestamp = datetime.utcnow().isoformat(timespec='seconds') + 'Z'
+            method = 'GET'
+            request_path = '/api/v5/account/balance'
+            
+            # 生成签名
+            message = timestamp + method + request_path
+            mac = hmac.new(
+                self.api_secret.encode('utf-8'),
+                message.encode('utf-8'),
+                digestmod='sha256'
+            )
+            sign = base64.b64encode(mac.digest()).decode('utf-8')
+            
+            headers = {
+                'OK-ACCESS-KEY': self.api_key,
+                'OK-ACCESS-SIGN': sign,
+                'OK-ACCESS-TIMESTAMP': timestamp,
+                'OK-ACCESS-PASSPHRASE': self.passphrase
+            }
+            
+            url = self.base_url + request_path
+            response = self._send_request('GET', url, headers=headers)
+            return response.json()
+        except Exception as e:
+            raise Exception(f"获取余额失败: {str(e)}")
 
     def withdraw(self, address, coin, amount, network, fee, min_interval, max_interval, fund_password=None):
         """提币操作"""
@@ -373,3 +404,45 @@ class GateClient(ExchangeClient):
                 'success': False,
                 'message': f'提币失败: {result.get("message", "未知错误")}'
             }
+
+    def process_address(self, address):
+        try:
+            # 确保地址字符串使用UTF-8编码
+            if isinstance(address, str):
+                address = address.encode('utf-8').decode('utf-8')
+            return address
+        except Exception as e:
+            raise Exception(f"地址处理错误: {str(e)}")
+
+    def _send_request(self, method, url, headers=None, data=None):
+        """统一的请求发送方法"""
+        try:
+            if headers is None:
+                headers = {}
+            
+            # 确保数据使用UTF-8编码
+            if isinstance(data, dict):
+                data = json.dumps(data, ensure_ascii=False).encode('utf-8')
+            elif isinstance(data, str):
+                data = data.encode('utf-8')
+                
+            headers.update({
+                'Content-Type': 'application/json; charset=utf-8',
+                'Accept': 'application/json',
+                'Accept-Charset': 'utf-8'
+            })
+            
+            proxies = self.get_proxies()
+            response = requests.request(
+                method,
+                url,
+                headers=headers,
+                data=data,
+                proxies=proxies
+            )
+            
+            # 强制设置响应编码
+            response.encoding = 'utf-8'
+            return response
+        except Exception as e:
+            raise Exception(f"请求失败: {str(e)}")
