@@ -57,7 +57,7 @@ python main.py
 ### 3. 打包程序
 ```bash
 pip install pyinstaller
-pyinstaller -F -w -i icon.ico main.py
+pyinstaller CEX提币器.spec 
 ```
 
 ## 项目结构
